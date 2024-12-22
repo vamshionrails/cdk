@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: cdk-deploy
+  namespace: argocd  # Ensure this matches the namespace where Argo Workflows is installed
+spec:
+  entrypoint: deploy-cdk
+  templates:
+  - name: deploy-cdk
+    container:
+      image: node:18  # Node.js container with required tools
+      command: [ "sh", "-c" ]
+      args: [
+        "git clone https://github.com/vamshionrails/cdk.git && \
+         cd cdk-test && \
+         npm install && \
+         aws sso login --profile your-sso-profile && \
+         cdk deploy --profile your-sso-profile --require-approval never"
+      ]
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: aws-secret
+              key: access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aws-secret
+              key: secret-access-key
+        - name: AWS_DEFAULT_REGION
+          value: us-east-1
